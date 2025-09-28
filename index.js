@@ -5,21 +5,22 @@ const {
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
-// makeInMemoryStore දෝෂය නිවැරදි කිරීම: Baileys හි නවතම අනුවාද සඳහා නිවැරදි path එක.
-const { makeInMemoryStore } = require('@whiskeysockets/baileys/lib/Utils/makeInMemoryStore');
+// makeInMemoryStore දෝෂය නිවැරදි කිරීම: වෙනම ස්ථාපනය කළ baileys-store පුස්තකාලය භාවිතා කරයි.
+const { makeInMemoryStore } = require('baileys-store'); 
 
 // Chat Data ගබඩා කිරීමට 'Store' එක සකසයි
 const store = makeInMemoryStore({ logger: pino({ level: 'silent' }) });
 
 const startBot = async () => {
     // 1. Session ගොනු ගබඩා කිරීම සඳහා වූ State එක සකස් කිරීම
+    // Session Data / creds.json ගොනු baileys_auth_info Folder එකේ ගබඩා වේ.
     const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info');
     
     // 2. Bot Socket එක නිර්මාණය කිරීම
     const sock = makeWASocket({
         logger: pino({ level: 'silent' }), // Console logs නිහඬ කරයි
         auth: state,
-        browser: ['TermuxAutoClearBot', 'Chrome', '1.0.0'], // Device Name එක
+        browser: ['TermuxAutoClearBot', 'Chrome', '1.0.0'],
         syncFullHistory: false,
     });
     
@@ -42,7 +43,7 @@ const startBot = async () => {
             console.log('Connection closed. Reconnecting:', shouldReconnect);
             // Log Out නම් නැවත සම්බන්ධ වීමට උත්සාහ නොකරයි.
             if (shouldReconnect) {
-                // Termux මත ස්ථාවරව නැවත සම්බන්ධ වීමට උත්සාහ කරන්න
+                // pm2 භාවිතයෙන් නිරන්තරයෙන්ම සක්‍රීයව තබා ගනී
                 setTimeout(() => startBot(), 5000); 
             }
         } else if (connection === 'open') {
@@ -75,7 +76,7 @@ const startBot = async () => {
                         }, chatId);
 
                     } catch (error) {
-                        // console.error(`❌ Message delete කිරීමේදී දෝෂයක්: ${chatId}:`, error.message);
+                        // Delete කිරීමට නොහැකි වුවහොත් දෝෂය ignore කරයි
                     }
                 }
             }
