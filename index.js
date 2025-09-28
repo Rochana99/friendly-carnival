@@ -4,10 +4,9 @@ const {
     DisconnectReason,
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
-const express = require('express');
 
-// makeInMemoryStore දෝෂය නිවැරදි කිරීම සඳහා මෙය lib/Store වෙතින් import කරයි
-const { makeInMemoryStore } = require('@whiskeysockets/baileys/lib/Store');
+// makeInMemoryStore දෝෂය නිවැරදි කිරීම: Baileys හි නවතම අනුවාද සඳහා නිවැරදි path එක.
+const { makeInMemoryStore } = require('@whiskeysockets/baileys/lib/Utils/makeInMemoryStore');
 
 // Chat Data ගබඩා කිරීමට 'Store' එක සකසයි
 const store = makeInMemoryStore({ logger: pino({ level: 'silent' }) });
@@ -20,7 +19,7 @@ const startBot = async () => {
     const sock = makeWASocket({
         logger: pino({ level: 'silent' }), // Console logs නිහඬ කරයි
         auth: state,
-        browser: ['AutoClearBot', 'Chrome', '1.0.0'], // Device Name එක
+        browser: ['TermuxAutoClearBot', 'Chrome', '1.0.0'], // Device Name එක
         syncFullHistory: false,
     });
     
@@ -43,10 +42,11 @@ const startBot = async () => {
             console.log('Connection closed. Reconnecting:', shouldReconnect);
             // Log Out නම් නැවත සම්බන්ධ වීමට උත්සාහ නොකරයි.
             if (shouldReconnect) {
-                setTimeout(() => startBot(), 5000); // තත්පර 5 කින් නැවත සම්බන්ධ වීමට උත්සාහ කරන්න
+                // Termux මත ස්ථාවරව නැවත සම්බන්ධ වීමට උත්සාහ කරන්න
+                setTimeout(() => startBot(), 5000); 
             }
         } else if (connection === 'open') {
-            console.log('✅ Successfully connected to WhatsApp! Bot is Ready. (24/7 Active)');
+            console.log('✅ Successfully connected to WhatsApp! Bot is Ready.');
         }
     });
 
@@ -74,9 +74,6 @@ const startBot = async () => {
                             messages: [msg.key] 
                         }, chatId);
 
-                        // ඔබට අවශ්‍ය නම්, deleted message එක console එකේ දකින්න මෙය uncomment කරන්න:
-                        // console.log(`✅ Pinned Chat එකෙන් (ID: ${chatId}) ලැබුණු පණිවිඩය successfully deleted for you.`);
-
                     } catch (error) {
                         // console.error(`❌ Message delete කිරීමේදී දෝෂයක්: ${chatId}:`, error.message);
                     }
@@ -86,15 +83,5 @@ const startBot = async () => {
     });
 };
 
-// Replit හිදි නිරතුරුවම සක්‍රීයව තබා ගැනීමට (Keep Alive) අවශ්‍ය සරල web server එක
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-    res.send('WhatsApp Auto Clear Bot is Running 24/7!');
-});
-
-app.listen(PORT, () => {
-    console.log(`Bot Keep-Alive Server listening on port ${PORT}`);
-    startBot(); // Server එක ආරම්භ වූ පසු Bot එක ආරම්භ කරන්න
-});
+// Bot එක ආරම්භ කරන්න
+startBot();
