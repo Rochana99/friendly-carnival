@@ -1,0 +1,22 @@
+{
+  "name": "whatsapp-auto-clear-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Bot to auto-delete messages in pinned chats.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.2",
+    "pino": "^8.16.2",
+    "express": "^4.18.2" 
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "baileys",
+    "auto-delete"
+  ],
+  "author": "",
+  "license": "ISC"
+}
