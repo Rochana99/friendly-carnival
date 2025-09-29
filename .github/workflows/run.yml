@@ -1,0 +1,43 @@
+name: Whatsapp Auto Clear Bot Runner
+
+on:
+  # 24/7 ක්‍රියාත්මක වීමට සෑම පැය 6 කට වරක් නැවත ධාවනය වේ
+  schedule:
+    - cron: '0 */6 * * *'
+  # Manually run from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install Dependencies
+        run: npm install
+        
+      - name: Check for Session Data
+        id: check_session
+        uses: andstor/file-existence-action@v1
+        with:
+          files: 'baileys_auth_info/creds.json'
+          
+      - name: Get Session Data
+        if: steps.check_session.outputs.files_exists == 'true'
+        run: |
+          mkdir baileys_auth_info
+          echo "${{ secrets.SESSION_DATA }}" > baileys_auth_info/creds.json
+
+      - name: Start Bot and Get Pair Code
+        # Bot එක ආරම්භ කර එය සක්‍රීයව තබා ගනී
+        run: node index.js &
+        
+      - name: Keep Runner Alive
+        # Pair Code එක ලැබෙන තුරු හෝ Session එක Save වන තුරු රැඳී සිටියි
+        run: sleep 60 # තත්පර 60 ක් රැඳී සිටියි
