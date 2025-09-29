@@ -1,9 +1,9 @@
-name: Whatsapp Auto Clear Bot Runner
+name: Stealth Auto Clear Bot Runner
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
+    - cron: '0 */6 * * *' # සෑම පැය 6 කට වරක් Run වේ
+  workflow_dispatch: # Manually Run කිරීමට
 
 jobs:
   run-bot:
@@ -11,34 +11,41 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-
+          
       - name: Install Dependencies
         run: npm install
-
+        
       - name: Check for Session Data
         id: check_session
         uses: andstor/file-existence-action@v1
         with:
-          files: 'baileys_auth_info/creds.json'
-
-      - name: Get Session Data
-        if: steps.check_session.outputs.files_exists == 'true'
+          files: 'sessions/creds.json'
+          
+      - name: Get Session Data from Secret
+        if: steps.check_session.outputs.files_exists == 'true' && secrets.SESSION_DATA != ''
         run: |
-          mkdir -p baileys_auth_info # -p flag ensures parent directories are created
-          echo "${{ secrets.SESSION_DATA }}" > baileys_auth_info/creds.json
-
-      - name: Start Bot and Wait for Pair Code/Connection
-        # Bot එක ආරම්භ කර තත්පර 60ක් නින්දට නොයා ඉන්න ඉඩ දෙයි
-        # මෙහිදී nohup මඟින් Bot එක පසුබිමේ Run කරන අතර timeout මඟින් Runner එකට කාලය සීමා කරයි.
+          mkdir -p sessions
+          echo "${{ secrets.SESSION_DATA }}" > sessions/creds.json
+          echo "Session data loaded from secrets."
+        
+      - name: Start Bot and Wait for QR Code/Connection
+        # Bot එක ආරම්භ කර QR Code/Connection සඳහා තත්පර 180ක් (මිනිත්තු 3ක්) රැඳී සිටියි
         run: |
-          nohup node index.js > bot.log 2>&1 & # Bot එක background එකේ Run කර logs bot.log file එකට දමයි
-          timeout 60s tail -f bot.log || true # තත්පර 60ක් bot.log file එක බලන් ඉන්නවා. timeout වුණොත් error එකක් නොදී continue වෙනවා.
+          nohup node index.js > bot_output.log 2>&1 &
+          timeout 180s tail -f bot_output.log || true
 
-      # Bot එක සම්බන්ධ වූ පසු හෝ Pair Code එක ලැබුණු පසු,
-      # ඔබට Session Data (creds.json) Github Secret එකට Add කළ හැක.
-      # මෙතැන් සිට Bot එක 24/7 ක්‍රියාත්මක වනු ඇත.
+      - name: Save Session Data to Secret
+        if: always() && steps.check_session.outputs.files_exists == 'false'
+        run: |
+          if [ -f sessions/creds.json ]; then
+            SESSION_DATA=$(cat sessions/creds.json)
+            echo "::notice file=sessions/creds.json::New session data generated. Please copy this JSON and set it as a repository secret named SESSION_DATA."
+            echo "Session JSON: $SESSION_DATA"
+          else
+            echo "::warning::creds.json not found after bot run. Connection might not have been established."
+          fi
