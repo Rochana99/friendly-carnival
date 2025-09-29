@@ -27,7 +27,6 @@ jobs:
           files: 'sessions/creds.json'
           
       - name: Load Session Data from Secret (if available)
-        # SESSION_DATA Secret එක හිස් නොවේ නම්, එය environment variable එකකට දමා load කරයි.
         if: steps.check_session_file.outputs.files_exists == 'false'
         env:
           SESSION_DATA_SECRET: ${{ secrets.SESSION_DATA }} 
@@ -40,13 +39,15 @@ jobs:
             echo "SESSION_DATA secret is empty or not set. Bot will try to generate Pair Code."
           fi
             
-      - name: Start Bot and Print Pair Code to Console (Wait 180s)
-        # Bot එක ආරම්භ කර Pair Code එක ක්ෂණිකව Console එකට Print වීමට සලස්වයි.
+      - name: Start Bot and Get Pair Code (Wait for 180s)
+        # Bot එක ආරම්භ කර Pair Code එක Console එකට Print වීමට සලස්වයි.
+        # GitHub Actions Runner එකට අවශ්‍ය පරිදි, Command එක Block කර තබා ගනී.
         run: |
           node index.js & # Bot එක background එකේ Run කරන්න.
           sleep 10      # Bot එකට ආරම්භ වීමට තත්පර 10ක් දෙන්න.
-          tail -f bot_output.log & # bot_output.log එක බලන්න (Pair Code එක මෙහි ලියවෙනවා).
-          wait 180s # Runner එක තත්පර 180ක් රැඳී සිටින්න.
+          # මෙතැන් සිට Pair Code එක Console එකට print වීමට පටන් ගත යුතුය.
+          echo "Waiting for 170 seconds for Pair Code / connection..."
+          sleep 170     # Pair Code එක සඳහා හෝ සම්බන්ධ වීමට තවත් තත්පර 170ක් රැඳී සිටින්න.
 
       - name: Save New Session Data to Output
         # Bot එක සාර්ථකව සම්බන්ධ වූ පසු, නව Session Data (creds.json) සොයා ගනී
