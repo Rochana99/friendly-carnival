@@ -2,7 +2,7 @@ const {
     makeWASocket,
     useMultiFileAuthState,
     DisconnectReason,
-    makeInMemoryStore, // <-- Baileys හිම makeInMemoryStore භාවිත කරයි
+    makeInMemoryStore, 
     fetchLatestBaileysVersion,
     Browsers
 } = require('@whiskeysockets/baileys');
@@ -10,10 +10,10 @@ const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
 
-// Log Console Message එකක් නොපෙන්වීමට Pino Logger එක silent කරයි
+// Console Logs සම්පූර්ණයෙන්ම නිහඬ කරයි (Stealth Mode)
 const logger = pino({ level: 'silent' });
 
-// Chats Store එක සාදයි
+// Chats Store එක සාදයි (Pin Status බැලීමට)
 const store = makeInMemoryStore({ logger });
 
 const startStealthAutoClearBot = async () => {
@@ -24,12 +24,12 @@ const startStealthAutoClearBot = async () => {
     const { version } = await fetchLatestBaileysVersion();
 
     const sock = makeWASocket({
-        logger: logger, // Console logs සම්පූර්ණයෙන්ම නිහඬයි
-        printQRInTerminal: false, // QR Code Terminal එකේ print නොකරයි
-        browser: Browsers.macOS('Firefox'), // Default Browser Name
+        logger: logger, 
+        printQRInTerminal: false, 
+        browser: Browsers.macOS('Firefox'), 
         auth: state,
         version: version,
-        syncFullHistory: true, // සම්පූර්ණ Chat History එක Sync කරයි
+        syncFullHistory: true, 
     });
     
     // Store එක, sock එකේ Events සමග සම්බන්ධ කරයි
@@ -37,13 +37,15 @@ const startStealthAutoClearBot = async () => {
 
     // --- Connection State Handling ---
     sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
+        const { connection, lastDisconnect, pairingCode } = update;
         
-        if (qr && !sock.authState.creds.registered) {
-            // QR Code String එක ලබා දෙයි (Bot is not connected yet)
-            console.log(`QR Code URL: ${qr}`); 
-            console.log('Use a Base64 to QR Code Converter to scan this.');
-            console.log('Scan this QR Code using WhatsApp -> Linked Devices. This will only show once.');
+        // Bot එක ලොග් වී නැති විට Pair Code එක ජනනය කරයි
+        if (pairingCode && !sock.authState.creds.registered) {
+            // Pair Code එක Console එකට Print කරයි
+            console.log('\n=================================================');
+            console.log(`| Pair Code: ${pairingCode} |`); 
+            console.log('=================================================\n');
+            console.log('WhatsApp -> Linked Devices -> Link with phone number තෝරා මෙම Pair Code එක ඇතුළු කරන්න. (තත්පර 180ක් ඇතුළත)');
 
         } else if (connection === 'close') {
             const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
@@ -52,13 +54,13 @@ const startStealthAutoClearBot = async () => {
                 setTimeout(() => startStealthAutoClearBot(), 5000); 
             } else {
                 // Logged Out නම් Session Files මකා දමා නැවත ආරම්භ වේ
-                console.log('Logged out. Deleting session files and restarting...');
+                logger.info('Logged out. Deleting session files and restarting...');
                 fs.rmSync('./sessions', { recursive: true, force: true });
                 setTimeout(() => startStealthAutoClearBot(), 1000);
             }
         } else if (connection === 'open') {
             // සම්බන්ධ වූ පසු කිසිදු Message එකක් හෝ Image එකක් නොයවයි
-            console.log('✅ Stealth Auto Clear Bot connected successfully.');
+            logger.info('✅ Stealth Auto Clear Bot connected successfully.');
         }
     });
 
@@ -87,7 +89,6 @@ const startStealthAutoClearBot = async () => {
                         }, chatId);
 
                     } catch (error) {
-                        // දෝෂයක් ආවත් Bot එක නතර නොවේ, නිහඬවම Log කරයි
                         logger.error('Error deleting message:', error);
                     }
                 }
