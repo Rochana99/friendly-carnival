@@ -11,42 +11,42 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-
+          
       - name: Install Dependencies
         run: npm install
-
+        
       - name: Check for Session Data File
         id: check_session_file
         uses: andstor/file-existence-action@v1
         with:
           files: 'sessions/creds.json'
-
+          
       - name: Load Session Data from Secret (if available)
-        # මෙම පියවර ක්‍රියාත්මක වන්නේ creds.json නැති විට පමණක් වන අතර,
-        # SESSION_DATA Secret එක හිස් නැති නම් පමණි.
-        # Secrets කෙලින්ම 'if' වලට දැමීමෙන් වැළකී, එය environment variable එකකට දමයි.
+        # SESSION_DATA Secret එක හිස් නොවේ නම්, එය environment variable එකකට දමා load කරයි.
         if: steps.check_session_file.outputs.files_exists == 'false'
         env:
-          SESSION_DATA_SECRET: ${{ secrets.SESSION_DATA }} # Secret එක Environment Variable එකකට දමයි
+          SESSION_DATA_SECRET: ${{ secrets.SESSION_DATA }} 
         run: |
-          if [ -n "$SESSION_DATA_SECRET" ]; then # Environment Variable එක හිස් නොවේ නම් පමණක්
+          if [ -n "$SESSION_DATA_SECRET" ]; then 
             mkdir -p sessions
             echo "$SESSION_DATA_SECRET" > sessions/creds.json
             echo "Session data loaded from secrets."
           else
-            echo "SESSION_DATA secret is empty or not set. Bot will try to generate QR code."
+            echo "SESSION_DATA secret is empty or not set. Bot will try to generate Pair Code."
           fi
-
-      - name: Start Bot and Wait for QR Code/Connection
-        # Bot එක ආරම්භ කර QR Code/Connection සඳහා තත්පර 180ක් (මිනිත්තු 3ක්) රැඳී සිටියි
+            
+      - name: Start Bot and Print Pair Code to Console (Wait 180s)
+        # Bot එක ආරම්භ කර Pair Code එක ක්ෂණිකව Console එකට Print වීමට සලස්වයි.
         run: |
-          nohup node index.js > bot_output.log 2>&1 &
-          timeout 180s tail -f bot_output.log || true
+          node index.js & # Bot එක background එකේ Run කරන්න.
+          sleep 10      # Bot එකට ආරම්භ වීමට තත්පර 10ක් දෙන්න.
+          tail -f bot_output.log & # bot_output.log එක බලන්න (Pair Code එක මෙහි ලියවෙනවා).
+          wait 180s # Runner එක තත්පර 180ක් රැඳී සිටින්න.
 
       - name: Save New Session Data to Output
         # Bot එක සාර්ථකව සම්බන්ධ වූ පසු, නව Session Data (creds.json) සොයා ගනී
