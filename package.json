@@ -1,7 +1,7 @@
 {
-  "name": "whatsapp-auto-clear-bot",
+  "name": "whatsapp-stealth-auto-clear-bot",
   "version": "1.0.0",
-  "description": "WhatsApp Bot to auto-delete messages in pinned chats.",
+  "description": "WhatsApp Bot to auto-delete messages in pinned chats stealthily.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -14,8 +14,9 @@
     "whatsapp",
     "bot",
     "baileys",
-    "auto-delete"
+    "auto-delete",
+    "stealth"
   ],
-  "author": "",
+  "author": "Rochana99",
   "license": "ISC"
 }
