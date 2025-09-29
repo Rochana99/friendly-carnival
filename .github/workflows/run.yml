@@ -39,15 +39,13 @@ jobs:
             echo "SESSION_DATA secret is empty or not set. Bot will try to generate Pair Code."
           fi
             
-      - name: Start Bot and Get Pair Code (Wait for 180s)
-        # Bot එක ආරම්භ කර Pair Code එක Console එකට Print වීමට සලස්වයි.
-        # GitHub Actions Runner එකට අවශ්‍ය පරිදි, Command එක Block කර තබා ගනී.
+      - name: Start Bot and Get Pair Code (Direct Print)
+        # Bot එක ආරම්භ කර Pair Code එක කෙලින්ම Console එකට print කරයි.
+        # මෙම Step එක Bot එක ක්‍රියාත්මක වන තාක් කල් Block වී පවතී.
+        timeout-minutes: 3 # මෙම Step එකට උපරිම මිනිත්තු 3ක් (තත්පර 180ක්) පමණක් ඉඩ දෙන්න
         run: |
-          node index.js & # Bot එක background එකේ Run කරන්න.
-          sleep 10      # Bot එකට ආරම්භ වීමට තත්පර 10ක් දෙන්න.
-          # මෙතැන් සිට Pair Code එක Console එකට print වීමට පටන් ගත යුතුය.
-          echo "Waiting for 170 seconds for Pair Code / connection..."
-          sleep 170     # Pair Code එක සඳහා හෝ සම්බන්ධ වීමට තවත් තත්පර 170ක් රැඳී සිටින්න.
+          chmod +x start_bot.sh # Script එක execute කිරීමට අවසර දෙන්න
+          ./start_bot.sh        # Script එක Run කරන්න. Pair Code එක Console එකටම print වේ.
 
       - name: Save New Session Data to Output
         # Bot එක සාර්ථකව සම්බන්ධ වූ පසු, නව Session Data (creds.json) සොයා ගනී
