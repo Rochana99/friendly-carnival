@@ -5,29 +5,21 @@ const {
 } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
-// makeInMemoryStore දෝෂය නිවැරදි කිරීම: වෙනම ස්ථාපනය කළ baileys-store පුස්තකාලය භාවිතා කරයි.
-const { makeInMemoryStore } = require('baileys-store'); 
-
-// Chat Data ගබඩා කිරීමට 'Store' එක සකසයි
-const store = makeInMemoryStore({ logger: pino({ level: 'silent' }) });
+// Store Module ඉවත් කර ඇති නිසා, Bot එක සියලුම Chats වල පණිවිඩ Clear කරනු ඇත.
 
 const startBot = async () => {
     // 1. Session ගොනු ගබඩා කිරීම සඳහා වූ State එක සකස් කිරීම
-    // Session Data / creds.json ගොනු baileys_auth_info Folder එකේ ගබඩා වේ.
     const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info');
     
     // 2. Bot Socket එක නිර්මාණය කිරීම
     const sock = makeWASocket({
         logger: pino({ level: 'silent' }), // Console logs නිහඬ කරයි
         auth: state,
-        browser: ['TermuxAutoClearBot', 'Chrome', '1.0.0'],
+        browser: ['GithubAutoClearBot', 'Chrome', '1.0.0'], // Device Name
         syncFullHistory: false,
     });
     
-    // 3. Store එක, sock එකේ Events සමග සම්බන්ධ කිරීම
-    store.bind(sock.ev);
-
-    // --- Connection State Handling (සම්බන්ධතා කළමනාකරණය) ---
+    // --- Connection State Handling ---
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, pairingCode } = update;
         
@@ -41,9 +33,8 @@ const startBot = async () => {
         } else if (connection === 'close') {
             const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log('Connection closed. Reconnecting:', shouldReconnect);
-            // Log Out නම් නැවත සම්බන්ධ වීමට උත්සාහ නොකරයි.
             if (shouldReconnect) {
-                // pm2 භාවිතයෙන් නිරන්තරයෙන්ම සක්‍රීයව තබා ගනී
+                // විසන්ධි වූ විට නැවත ආරම්භ වේ
                 setTimeout(() => startBot(), 5000); 
             }
         } else if (connection === 'open') {
@@ -51,38 +42,27 @@ const startBot = async () => {
         }
     });
 
-    // 4. Credentials (ලොග් වීම් තොරතුරු) ඉතිරි කිරීම (Save)
+    // 3. Credentials (ලොග් වීම් තොරතුරු) ඉතිරි කිරීම (Save)
     sock.ev.on('creds.update', saveCreds);
 
-    // --- Core Function: Pin Chats Auto Delete Messages ---
+    // --- Core Function: ALL Chats Auto Delete Messages ---
     sock.ev.on('messages.upsert', async ({ messages }) => {
         for (const msg of messages) {
             // System messages සහ Bot එකෙන් යවන messages මගහැරීම
             if (!msg.key.fromMe && msg.key.remoteJid) {
-                const chatId = msg.key.remoteJid;
+                try {
+                    // පණිවිඩය ලැබුණු වහාම එය 'Delete for Me' කිරීම
+                    await sock.chatModify({
+                        delete: 'messages', 
+                        messages: [msg.key] 
+                    }, msg.key.remoteJid);
 
-                // Chat එකේ විස්තර Store එකෙන් ලබා ගැනීම
-                const chat = store.chats.get(chatId);
-
-                // Chat එක Pin කර තිබේදැයි පරීක්ෂා කිරීම (pin > 0 නම් Pin කර ඇත)
-                const isPinned = chat && chat.pin > 0;
-
-                if (isPinned) {
-                    try {
-                        // පණිවිඩය ලැබුණු වහාම එය 'Delete for Me' කිරීම
-                        await sock.chatModify({
-                            delete: 'messages', 
-                            messages: [msg.key] 
-                        }, chatId);
-
-                    } catch (error) {
-                        // Delete කිරීමට නොහැකි වුවහොත් දෝෂය ignore කරයි
-                    }
+                } catch (error) {
+                    // දෝෂයක් ආවත් Bot එක නතර නොවේ
                 }
             }
         }
     });
 };
 
-// Bot එක ආරම්භ කරන්න
 startBot();
