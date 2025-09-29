@@ -40,4 +40,4 @@ jobs:
         
       - name: Keep Runner Alive
         # Pair Code එක ලැබෙන තුරු හෝ Session එක Save වන තුරු රැඳී සිටියි
-        run: sleep 60 # තත්පර 60 ක් රැඳී සිටියි
+        run: sleep 90 # තත්පර 60 ක් රැඳී සිටියි
