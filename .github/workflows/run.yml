@@ -27,6 +27,7 @@ jobs:
           files: 'sessions/creds.json'
           
       - name: Load Session Data from Secret (if available)
+        # SESSION_DATA Secret එක හිස් නොවේ නම්, එය environment variable එකකට දමා load කරයි.
         if: steps.check_session_file.outputs.files_exists == 'false'
         env:
           SESSION_DATA_SECRET: ${{ secrets.SESSION_DATA }} 
@@ -40,12 +41,16 @@ jobs:
           fi
             
       - name: Start Bot and Get Pair Code (Direct Print)
-        # Bot එක ආරම්භ කර Pair Code එක කෙලින්ම Console එකට print කරයි.
-        # මෙම Step එක Bot එක ක්‍රියාත්මක වන තාක් කල් Block වී පවතී.
-        timeout-minutes: 3 # මෙම Step එකට උපරිම මිනිත්තු 3ක් (තත්පර 180ක්) පමණක් ඉඩ දෙන්න
+        # Pair Code එක ක්ෂණිකව Console එකට Print වීමට සලස්වයි.
         run: |
-          chmod +x start_bot.sh # Script එක execute කිරීමට අවසර දෙන්න
-          ./start_bot.sh        # Script එක Run කරන්න. Pair Code එක Console එකටම print වේ.
+          chmod +x start_bot.sh # start_bot.sh script එක execute කිරීමට අවසර දෙන්න
+          ./start_bot.sh &      # Shell Script එක background එකේ Run කරන්න.
+          
+          # Shell Script එක තුළ node index.js විධානය තිබෙන බැවින්,
+          # Bot එක ආරම්භ වී Pair Code එක Console එකට print වීමට පටන් ගනී.
+          
+          echo "Waiting 3 minutes (180s) for Pair Code entry or successful connection..."
+          sleep 180             # Pair Code එක ඇතුළු කිරීමට තත්පර 180ක් රැඳී සිටින්න.
 
       - name: Save New Session Data to Output
         # Bot එක සාර්ථකව සම්බන්ධ වූ පසු, නව Session Data (creds.json) සොයා ගනී
